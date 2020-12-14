@@ -6,12 +6,12 @@ Obviously, this is an unofficial fan effort and not connected to the developers 
 
 ## Requirements
 
-[Rust](https://www.rust-lang.org/) is required, this project uses the `nightly` toolchain. The only valid/supported target is `i686-pc-windows-gnu`. This is because:
+[Rust](https://www.rust-lang.org/) is required, this project uses the `nightly` toolchain. The only valid/supported target is `i686-pc-windows-gnu`, i.e. [Mingw-w64](http://mingw-w64.org). This is because:
 
 * The original game is x86/32-bit only
 * The build script relies on `binutils` provided by Mingw-w64 to compile resources
 
-You can install the target with:
+Cross-compilation from Linux/macOS is supported, although the tests won't be run-able (it produces an exe, if it builds at all due to exception handling). You can install the target with:
 
 ```bash
 rustup +nightly target add i686-pc-windows-gnu

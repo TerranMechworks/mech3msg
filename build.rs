@@ -34,10 +34,10 @@ fn main() {
     let mut msg_def = String::new();
     let mut msg_map = String::new();
 
-    msg_map.push_str("static LOOKUP: &[(&str, i32)] = &[\n");
+    msg_map.push_str("static LOOKUP: &[(&[u8], i32)] = &[\n");
     for (key, mid, _msg) in &messages {
         msg_def.push_str("#[allow(non_upper_case_globals)]\n");
-        msg_def.push_str(&format!("static {0}: &str = \"{0}\";\n", key));
+        msg_def.push_str(&format!("static {0}: &[u8] = b\"{0}\";\n", key));
         msg_map.push_str(&format!("    ({}, 0x{:X}),\n", key, mid));
     }
     msg_map.push_str("];\n");
