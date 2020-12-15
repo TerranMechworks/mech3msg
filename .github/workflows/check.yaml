@@ -1,0 +1,60 @@
+name: Check
+on:
+  push:
+    branches:
+    - master
+    - workflow_check
+  pull_request:
+    branches:
+    - master
+jobs:
+  check:
+    name: Check
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      # Emit backtraces on panics.
+      RUST_BACKTRACE: full
+    steps:
+      - name: Uninstall mingw64/Install mingw32
+        shell: powershell
+        run: |
+          choco uninstall mingw --yes --force
+          choco install mingw --yes --forcex86
+      - name: Override PATH
+        shell: powershell
+        run: Write-Output "C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw32\bin;C:\Program Files\PowerShell\7\;C:\windows\System32\WindowsPowerShell\v1.0\;C:\Rust\.cargo\bin;C:\windows\system32;C:\windows" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+      # - name: Print PATH
+      #   shell: powershell
+      #   run: Write-Output $env:PATH.split(";")
+      # - name: Print PATHs
+      #   shell: powershell
+      #   run: |
+      #     which.exe i686-w64-mingw32-gcc-ar.exe
+      #     which.exe i686-w64-mingw32-gcc.exe
+      #     which.exe windmc.exe
+      #     which.exe windres.exe
+      - uses: actions/checkout@v2
+      - name: Install nightly toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: i686-pc-windows-gnu
+          components: rustfmt
+      - name: Copy dummy messages for test
+        shell: powershell
+        run: Copy-Item ".\.github\Mech3Msg.json" -Destination "."
+      - name: Run cargo check
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+      - name: Run cargo fmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+      - name: Run cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --lib --no-fail-fast
