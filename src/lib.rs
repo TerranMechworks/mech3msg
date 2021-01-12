@@ -2,6 +2,9 @@
 #![feature(core_intrinsics)]
 use core::ptr::slice_from_raw_parts;
 
+#[cfg(feature = "hook")]
+mod hook;
+
 const INVALID: i32 = 0;
 
 include!(concat!(env!("OUT_DIR"), "/lookup.rs"));

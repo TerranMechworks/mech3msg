@@ -18,6 +18,20 @@ build = "build.rs"
 
 [dependencies]
 
+[dependencies.winapi]
+version = "0.3"
+features = ["winuser", "libloaderapi", "processthreadsapi", "memoryapi", "profileapi", "debugapi"]
+optional = true
+
+[dependencies.cstr_core]
+version = "0.2.2"
+default-features = false
+optional = true
+
+[features]
+default = ["hook"]
+hook = ["winapi", "cstr_core"]
+
 [lib]
 crate-type = ["cdylib"]
 test = false
