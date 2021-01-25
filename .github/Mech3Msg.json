@@ -1,4 +1,7 @@
-[
-  ["MSG_BACK", 1, "XXX FIRST - for unit test only"],
-  ["MSG_NOTEXTURE_MEMORY", 4031, "XXX LAST - for unit test only"]
-]
+{
+  "language_id": 1031,
+  "entries": [
+    ["MSG_BACK", 1, "XXX FIRST - for unit test only"],
+    ["MSG_NOTEXTURE_MEMORY", 4031, "XXX LAST - for unit test only"]
+  ]
+}

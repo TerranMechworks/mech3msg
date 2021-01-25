@@ -1,5 +1,6 @@
 use encoding::all::WINDOWS_1252;
 use encoding::{EncoderTrap, Encoding};
+use serde::Deserialize;
 use std::env;
 use std::fs::{read_to_string, File};
 use std::io::{BufWriter, Write};
@@ -22,49 +23,47 @@ mod constants {
     pub const LIB: &str = "libmessages.a";
 }
 
+#[derive(Debug, Deserialize)]
+pub struct Messages {
+    pub language_id: u32,
+    pub entries: Vec<(String, u32, String)>,
+}
+
 fn main() {
     // Only re-run the build script if the messages change
     println!("cargo:rerun-if-changed=Mech3Msg.json");
 
-    let json = read_to_string("Mech3Msg.json").expect("Failed to read JSON");
-    let mut messages: Vec<(String, i32, String)> =
-        serde_json::from_str(&json).expect("Failed to parse JSON");
-    // Must be sorted by key, for the binary search in the DLL to work!
-    messages.sort_by(|a, b| a.0.cmp(&b.0));
-
-    // Build the static table for message key to message table ID lookups
-    let mut msg_def = String::new();
-    let mut msg_map = String::new();
-
-    msg_map.push_str("static LOOKUP: &[(&[u8], i32)] = &[\n");
-    for (key, mid, _msg) in &messages {
-        msg_def.push_str("#[allow(non_upper_case_globals)]\n");
-        msg_def.push_str(&format!("static {0}: &[u8] = b\"{0}\";\n", key));
-        msg_map.push_str(&format!("    ({}, 0x{:X}),\n", key, mid));
-    }
-    msg_map.push_str("];\n");
-
     let out_dir = env::var("OUT_DIR").expect("No OUT_DIR env var");
     let out_path = PathBuf::from(&out_dir);
 
-    let rs_path = out_path.join("lookup.rs");
-    {
-        let mut file = BufWriter::new(File::create(&rs_path).expect("Failed to create lookup"));
-        write!(&mut file, "{}\n{}", msg_def, msg_map).expect("Failed to write lookup");
-    }
+    let json = read_to_string("Mech3Msg.json").expect("Failed to read JSON");
+    let Messages {
+        language_id,
+        mut entries,
+    } = serde_json::from_str(&json).expect("Failed to parse JSON");
+
+    let language = match language_id {
+        0x407 => "Language=German\r\n",
+        0x409 => "Language=English\r\n",
+        0x40c => "Language=French\r\n",
+        _ => panic!(
+            "Unknown language ID {} - refusing to continue, codepage may be incorrect",
+            language_id
+        ),
+    };
 
     // Build the message table resource (must use Windows newlines!)
     let mut resources = String::new();
     resources.push_str("MessageIdTypedef=DWORD\r\n");
     resources.push_str("LanguageNames=(\r\n");
     resources.push_str("  English=0x409:MSG1033\r\n");
-    resources.push_str("  German=0x0407:MSG1031\r\n");
-    resources.push_str("  French=0x040c:MSG1036\r\n");
+    resources.push_str("  German=0x407:MSG1031\r\n");
+    resources.push_str("  French=0x40c:MSG1036\r\n");
     resources.push_str(")\r\n\r\n");
-    for (key, mid, msg) in &messages {
+    for (key, mid, msg) in &entries {
         resources.push_str(&format!("MessageId=0x{:X}\r\n", mid));
         resources.push_str(&format!("SymbolicName={}\r\n", key));
-        resources.push_str("Language=English\r\n");
+        resources.push_str(language);
         resources.push_str(msg);
         resources.push_str("\r\n.\r\n\r\n");
     }
@@ -116,6 +115,27 @@ fn main() {
         .status()
         .expect("Failed to execute windres");
     assert!(status.success(), "Failed to compile resources ({})", status);
+
+    // Must be sorted by key, for the binary search in the DLL to work!
+    entries.sort_by(|a, b| a.0.cmp(&b.0));
+
+    // Build the static table for message key to message table ID lookups
+    let mut msg_def = String::new();
+    let mut msg_map = String::new();
+
+    msg_map.push_str("static LOOKUP: &[(&[u8], i32)] = &[\n");
+    for (key, mid, _msg) in &entries {
+        msg_def.push_str("#[allow(non_upper_case_globals)]\n");
+        msg_def.push_str(&format!("static {0}: &[u8] = b\"{0}\";\n", key));
+        msg_map.push_str(&format!("    ({}, 0x{:X}),\n", key, mid));
+    }
+    msg_map.push_str("];\n");
+
+    let rs_path = out_path.join("lookup.rs");
+    {
+        let mut file = BufWriter::new(File::create(&rs_path).expect("Failed to create lookup"));
+        write!(&mut file, "{}\n{}", msg_def, msg_map).expect("Failed to write lookup");
+    }
 
     println!("cargo:rustc-link-search=native={}", out_dir);
     println!("cargo:rustc-link-lib=static=messages");

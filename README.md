@@ -2,7 +2,7 @@
 
 This project produces a DLL that implements the [MechWarrior 3](https://en.wikipedia.org/wiki/MechWarrior_3) localization API, and so can be used to replace the default `Mech3Msg.dll`. It can also do more. For example, the resolution for [`GetTickCount`](https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount) "is typically in the range of 10 milliseconds to 16 milliseconds". This causes problems on modern PCs when running MechWarrior 3. The DLL can patch this function to a custom implementation using a high-resolution timer ([`QueryPerformanceCounter`](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter)), to fix some issues without requiring workarounds like [dgVoodoo 2](http://dege.freeweb.hu/).
 
-The replacement DLL can also be used for another Zipper Interactive game, [Recoil](https://en.wikipedia.org/wiki/Recoil_(video_game)) (in this case, the DLL is called `messages.dll`).
+The replacement DLL can also be used for another Zipper Interactive game, [Recoil](https://en.wikipedia.org/wiki/Recoil_(video_game)) (in this case, the DLL is called `messages.dll` and there's some extra steps).
 
 Obviously, this is an unofficial fan effort and not connected to the developers or publishers. [Join us on Discord](https://discord.gg/Be53gMy)!
 
@@ -12,6 +12,8 @@ Obviously, this is an unofficial fan effort and not connected to the developers 
 
 * The original game is x86/32-bit only
 * The build script relies on `binutils` provided by Mingw-w64 to compile resources
+
+Command-line proficiency is assumed; all commands provided are for Bash-compatible shells, and not Powershell! (Even Windows-only commands.)
 
 Cross-compilation from Linux/macOS is supported, although the tests won't be run-able (it produces a `.exe`, if it builds at all due to exception handling). You can install the target with:
 
@@ -41,6 +43,16 @@ If patching of `GetTickCount` is not wanted (for example when targeting Recoil),
 cargo build --release --no-default-features
 ```
 
+## Comparing
+
+On Windows, you can use `compare.py` to test if the DLLs have the same behaviour (assuming the messages were correctly extracted):
+
+```bash
+python3 compare.py "Mech3Msg.json" "Mech3Msg.dll" "target/i686-pc-windows-gnu/release/mech3msg.dll"
+```
+
+Alternatively, you can use a program like [Resource Hacker](http://www.angusj.com/resourcehacker/) to dump the message tables in both the original DLL and produced DLL, and compare those. Minor differences in ordering should be allowed.
+
 ## Internals
 
 ### Adding messages
@@ -60,6 +72,16 @@ Messages from different versions can be merged into one JSON file to support dif
 ### MSVC support
 
 This could probably be changed to support `msvc`, too, but it's a pain. If you would like to see what this entails, the [embed_resource](https://docs.rs/embed-resource/) crate provides some insight. However, the crate itself can't be used, because it doesn't expose `windmc`/`mc.exe`, only `windres`/`res.exe`.
+
+### Recoil
+
+Recoil support in both mech3msg and mech3ax is experimental:
+
+```bash
+unzbd messages "Messages.dll" "Mech3Msg.json" --dump-ids --skip-data 48
+cargo build --release
+cp "target/i686-pc-windows-gnu/release/mech3msg.dll" "Messages.dll"
+```
 
 ## License
 
