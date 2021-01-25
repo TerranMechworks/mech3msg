@@ -42,6 +42,7 @@ doc = false
 [build-dependencies]
 serde = "1.0"
 serde_json = "1.0"
+encoding = "0.2.33"
 
 [profile.dev]
 panic = "abort"

@@ -1,3 +1,5 @@
+use encoding::all::WINDOWS_1252;
+use encoding::{EncoderTrap, Encoding};
 use std::env;
 use std::fs::{read_to_string, File};
 use std::io::{BufWriter, Write};
@@ -53,9 +55,12 @@ fn main() {
 
     // Build the message table resource (must use Windows newlines!)
     let mut resources = String::new();
-    // These values aren't supported by binutils
-    // resources.push_str("MessageIdTypedef=DWORD\r\n");
-    // resources.push_str("LanguageNames=(English=0x409:MSG1033)\r\n\r\n");
+    resources.push_str("MessageIdTypedef=DWORD\r\n");
+    resources.push_str("LanguageNames=(\r\n");
+    resources.push_str("  English=0x409:MSG1033\r\n");
+    resources.push_str("  German=0x0407:MSG1031\r\n");
+    resources.push_str("  French=0x040c:MSG1036\r\n");
+    resources.push_str(")\r\n\r\n");
     for (key, mid, msg) in &messages {
         resources.push_str(&format!("MessageId=0x{:X}\r\n", mid));
         resources.push_str(&format!("SymbolicName={}\r\n", key));
@@ -66,14 +71,19 @@ fn main() {
 
     let mc_path = out_path.join("messages.mc");
     {
+        let buf = WINDOWS_1252
+            .encode(&resources, EncoderTrap::Strict)
+            .expect("Failed to encode messages");
         let mut file = BufWriter::new(File::create(&mc_path).expect("Failed to create messages"));
-        write!(&mut file, "{}", resources).expect("Failed to write messages");
+        file.write_all(&buf).expect("Failed to write messages");
     }
 
     // Compile the message table into a resource
     let status = Command::new(constants::WINDMC)
         .arg("--target")
         .arg("pe-i386")
+        .arg("--codepage_in")
+        .arg("1252")
         .arg("--codepage_out")
         .arg("1252")
         .arg("--headerdir")
