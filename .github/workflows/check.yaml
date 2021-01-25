@@ -23,7 +23,7 @@ jobs:
           choco install mingw --yes --forcex86
       - name: Override PATH
         shell: powershell
-        run: Write-Output "C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw32\bin;C:\Program Files\PowerShell\7\;C:\windows\System32\WindowsPowerShell\v1.0\;C:\Rust\.cargo\bin;C:\windows\system32;C:\windows" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+        run: Write-Output "C:\Rust\.cargo\bin;C:\ProgramData\Chocolatey\lib\mingw\tools\install\mingw32\bin;C:\Program Files\PowerShell\7\;C:\windows\System32\WindowsPowerShell\v1.0\;C:\windows\system32;C:\windows" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
       # - name: Print PATH
       #   shell: powershell
       #   run: Write-Output $env:PATH.split(";")
