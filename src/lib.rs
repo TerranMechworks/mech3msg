@@ -2,9 +2,6 @@
 #![feature(core_intrinsics)]
 use core::ptr::slice_from_raw_parts;
 
-#[cfg(feature = "hook")]
-mod hook;
-
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     core::intrinsics::abort()

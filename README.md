@@ -52,14 +52,6 @@ cargo build --release
 cp "target/i686-pc-windows-gnu/release/mech3msg.dll" "Messages.dll"
 ```
 
-## Kernel32.dll function hooking
-
-Although [ZipperFixup](https://github.com/TerranMechworks/ZipperFixup) is now preferred as a more comprehensive solution, this repo also has a proof of concept to hook functions in `kernel32.dll` to fix a common issue without requiring workarounds like [dgVoodoo 2](http://dege.freeweb.hu/).
-
-The resolution for [`GetTickCount`](https://docs.microsoft.com/en-us/windows/win32/api/sysinfoapi/nf-sysinfoapi-gettickcount) "is typically in the range of 10 milliseconds to 16 milliseconds". On modern processors, this isn't enough for fast clock speeds, and causes e.g. physics glitches. When built with the `hook` feature, the DLL can patch this function to a custom implementation using a high-resolution timer ([`QueryPerformanceCounter`](https://docs.microsoft.com/en-us/windows/win32/api/profileapi/nf-profileapi-queryperformancecounter)).
-
-This code path is not well-tested and remains largely unmaintained.
-
 ## Internals
 
 ### Adding messages
