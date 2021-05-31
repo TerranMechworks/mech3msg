@@ -5,9 +5,27 @@ use core::ptr::slice_from_raw_parts;
 #[cfg(feature = "hook")]
 mod hook;
 
-const INVALID_ID: i32 = 0;
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    core::intrinsics::abort()
+}
+#[no_mangle]
+pub extern "C" fn rust_eh_register_frames() {}
+#[no_mangle]
+pub extern "C" fn rust_eh_unregister_frames() {}
+
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
+mod msvc {
+    // With MSVC, for some reason this is required. This is what std does:
+    // https://github.com/rust-lang/libc/blob/a016994b91a5b0dbd8f234b60af936eedb227b22/src/windows/mod.rs#L253
+
+    #[link(name = "libcmt")]
+    extern "C" {}
+}
 
 include!(concat!(env!("OUT_DIR"), "/lookup.rs"));
+
+const INVALID_ID: i32 = 0;
 
 #[inline]
 fn strlen(ptr: *const u8) -> usize {
@@ -32,65 +50,4 @@ pub extern "C" fn ZLocGetID(ptr: *const u8) -> i32 {
         .binary_search_by_key(&loc, |&(key, _)| &key)
         .map(|index| LOOKUP[index].1)
         .unwrap_or(INVALID_ID)
-}
-
-#[cfg(all(target_os = "windows", target_env = "msvc"))]
-mod msvc {
-    // With MSVC, for some reason this is required. This is what std does:
-    // https://github.com/rust-lang/libc/blob/a016994b91a5b0dbd8f234b60af936eedb227b22/src/windows/mod.rs#L253
-
-    #[link(name = "libcmt")]
-    extern "C" {}
-}
-
-#[cfg(not(test))]
-mod not_test {
-    // The test framework will automatically pull in std, and these would conflict
-    #[panic_handler]
-    fn panic(_info: &core::panic::PanicInfo) -> ! {
-        core::intrinsics::abort()
-    }
-    #[no_mangle]
-    pub extern "C" fn rust_eh_register_frames() {}
-    #[no_mangle]
-    pub extern "C" fn rust_eh_unregister_frames() {}
-}
-
-#[cfg(test)]
-mod test {
-    // WARNING: The tests will only be run-able on Windows (since an exe will be
-    // produced when compiling). On other platforms, it's also usual to encounter
-    // linking errors (e.g. `_Unwind_Resume`), because of the exception handling
-    // (DWARF-2 vs SJLJ vs SEH).
-    use super::*;
-
-    #[test]
-    fn nullptr() {
-        assert_eq!(ZLocGetID(core::ptr::null()), 0);
-    }
-
-    #[test]
-    fn empty_str() {
-        let empty = [0u8];
-        assert_eq!(ZLocGetID(empty.as_ptr()), 0);
-    }
-
-    #[test]
-    fn not_found() {
-        let empty = b"MSG_FOO\0";
-        assert_eq!(ZLocGetID(empty.as_ptr()), 0);
-    }
-
-    #[test]
-    fn found_first() {
-        let empty = b"MSG_BACK\0";
-        assert_eq!(ZLocGetID(empty.as_ptr()), 1);
-    }
-
-    #[test]
-    fn found_last() {
-        // this is the last one in v1.0 only, e.g. v1.2 adds messages after
-        let empty = b"MSG_NOTEXTURE_MEMORY\0";
-        assert_eq!(ZLocGetID(empty.as_ptr()), 4031);
-    }
 }
