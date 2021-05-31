@@ -1,5 +1,2 @@
 [target.i686-pc-windows-msvc]
-rustflags = ["-C", "link-arg=/NOENTRY"]
-
-[build]
-rustflags = ["-Z", "print-link-args"]
+rustflags = ["-Z", "print-link-args", "-C", "link-arg=/NOENTRY"]

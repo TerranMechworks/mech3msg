@@ -51,7 +51,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --target "i686-pc-windows-msvc"
+          args: --release --target "i686-pc-windows-msvc" --verbose
 
       - name: Persist produced DLL for manual checking
         uses: actions/upload-artifact@v2
