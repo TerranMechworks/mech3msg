@@ -11,15 +11,6 @@ pub extern "C" fn rust_eh_register_frames() {}
 #[no_mangle]
 pub extern "C" fn rust_eh_unregister_frames() {}
 
-#[cfg(all(target_os = "windows", target_env = "msvc"))]
-mod msvc {
-    // With MSVC, for some reason this is required. This is what std does:
-    // https://github.com/rust-lang/libc/blob/a016994b91a5b0dbd8f234b60af936eedb227b22/src/windows/mod.rs#L253
-
-    #[link(name = "libcmt")]
-    extern "C" {}
-}
-
 include!(concat!(env!("OUT_DIR"), "/lookup.rs"));
 
 const INVALID_ID: i32 = 0;
