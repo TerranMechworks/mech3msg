@@ -11,16 +11,12 @@ use std::process::Command;
 mod constants {
     // On Windows, the binutils shipped by Mingw-w64 aren't prefixed
     pub const WINDMC: &str = "windmc";
-    pub const WINDRES: &str = "windres";
-    pub const LIB: &str = "messages.lib";
 }
 
 #[cfg(not(windows))]
 mod constants {
     // On Linux and MacOS, the binutils shipped by Mingw-w64 are prefixed
     pub const WINDMC: &str = "i686-w64-mingw32-windmc";
-    pub const WINDRES: &str = "i686-w64-mingw32-windres";
-    pub const LIB: &str = "libmessages.a";
 }
 
 #[derive(Debug, Deserialize)]
@@ -101,20 +97,7 @@ fn main() {
 
     // Compile the resource into a linkable library
     let rc_path = out_path.join("messages.rc");
-    let lib_path = out_path.join(constants::LIB);
-
-    let status = Command::new(constants::WINDRES)
-        .arg("--target")
-        .arg("pe-i386")
-        .arg("--input")
-        .arg(&rc_path)
-        .arg("--output")
-        .arg(&lib_path)
-        .arg("--output-format")
-        .arg("coff")
-        .status()
-        .expect("Failed to execute windres");
-    assert!(status.success(), "Failed to compile resources ({})", status);
+    embed_resource::compile(rc_path);
 
     // Must be sorted by key, for the binary search in the DLL to work!
     entries.sort_by(|a, b| a.0.cmp(&b.0));
@@ -136,7 +119,4 @@ fn main() {
         let mut file = BufWriter::new(File::create(&rs_path).expect("Failed to create lookup"));
         write!(&mut file, "{}\n{}", msg_def, msg_map).expect("Failed to write lookup");
     }
-
-    println!("cargo:rustc-link-search=native={}", out_dir);
-    println!("cargo:rustc-link-lib=static=messages");
 }

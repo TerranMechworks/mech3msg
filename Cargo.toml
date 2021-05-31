@@ -1,3 +1,4 @@
+# strip is a nightly feature: https://github.com/rust-lang/rust/issues/72110
 cargo-features = ["strip"]
 
 [package]
@@ -8,7 +9,7 @@ edition = "2018"
 description = "mech3msg is a replacement for the default localization DLL"
 readme = "README.md"
 license-file = "LICENSE.txt"
-repository = "https://github.com/tobywf/mech3msg"
+repository = "https://github.com/TerranMechworks/mech3msg"
 keywords = ["cli", "MechWarrior", "reverse engineering"]
 publish = false
 
@@ -29,7 +30,7 @@ default-features = false
 optional = true
 
 [features]
-default = ["hook"]
+default = []
 hook = ["winapi", "cstr_core"]
 
 [lib]
@@ -42,7 +43,8 @@ doc = false
 [build-dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-encoding = "0.2.33"
+encoding = "0.2"
+embed-resource = "1.6"
 
 [profile.dev]
 panic = "abort"

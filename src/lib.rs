@@ -5,7 +5,7 @@ use core::ptr::slice_from_raw_parts;
 #[cfg(feature = "hook")]
 mod hook;
 
-const INVALID: i32 = 0;
+const INVALID_ID: i32 = 0;
 
 include!(concat!(env!("OUT_DIR"), "/lookup.rs"));
 
@@ -23,7 +23,7 @@ fn strlen(ptr: *const u8) -> usize {
 #[no_mangle]
 pub extern "C" fn ZLocGetID(ptr: *const u8) -> i32 {
     if ptr.is_null() {
-        return INVALID;
+        return INVALID_ID;
     }
     let len = strlen(ptr);
     let slice = slice_from_raw_parts(ptr, len);
@@ -31,7 +31,16 @@ pub extern "C" fn ZLocGetID(ptr: *const u8) -> i32 {
     LOOKUP
         .binary_search_by_key(&loc, |&(key, _)| &key)
         .map(|index| LOOKUP[index].1)
-        .unwrap_or(INVALID)
+        .unwrap_or(INVALID_ID)
+}
+
+#[cfg(all(target_os = "windows", target_env = "msvc"))]
+mod msvc {
+    // With MSVC, for some reason this is required. This is what std does:
+    // https://github.com/rust-lang/libc/blob/a016994b91a5b0dbd8f234b60af936eedb227b22/src/windows/mod.rs#L253
+
+    #[link(name = "libcmt")]
+    extern "C" {}
 }
 
 #[cfg(not(test))]
