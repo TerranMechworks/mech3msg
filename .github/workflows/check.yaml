@@ -19,9 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Install Mingw-w64
+      - name: Install Mingw-w64 i686
         shell: bash
-        run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mingw-w64
+        run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -y gcc-mingw-w64-i686
 
       - name: Print windmc path
         shell: bash
