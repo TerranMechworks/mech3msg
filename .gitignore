@@ -1,5 +1,8 @@
 /target
-Cargo.lock
+
 /README.html
 /Mech3Msg.json
+
+/.mypy_cache
+
 .DS_Store

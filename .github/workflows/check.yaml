@@ -2,18 +2,16 @@ name: Check
 on:
   push:
     branches:
-    - master
+    - main
     - workflow_check
   pull_request:
     branches:
-    - master
-  schedule:
-  # At 11:00 (UTC) on day-of-month 25
-  - cron: '0 11 25 * *'
+    - main
+
 jobs:
   check:
     name: Check
-    runs-on: windows-latest
+    runs-on: windows-2022
     timeout-minutes: 5
     env:
       # Emit backtraces on panics.
@@ -23,41 +21,35 @@ jobs:
         shell: pwsh
         run: which.exe windmc.exe
 
-      - uses: actions/checkout@v2
-      - name: Install nightly toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          target: i686-pc-windows-msvc
-          components: rustfmt
+      # The next step needs `rust-toolchain.toml`
+      - name: Checkout sources
+        uses: actions/checkout@v2
+
+      - name: Sync toolchain
+        shell: bash
+        run: rustup show
 
       - name: Copy dummy messages for test
         shell: pwsh
         run: Copy-Item ".\.github\Mech3Msg.json" -Destination "."
 
       - name: Run cargo check
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --release --target "i686-pc-windows-msvc"
+        shell: bash
+        run: cargo check --release
 
       - name: Run cargo fmt
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: -- --check
+        shell: bash
+        run: cargo fmt -- --check
 
       - name: Run cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target "i686-pc-windows-msvc" --verbose
+        shell: bash
+        run: cargo build --release --verbose
 
       - name: Persist produced DLL for manual checking
         uses: actions/upload-artifact@v2
         with:
           name: release-build
-          path: target/i686-pc-windows-msvc/release/mech3msg.dll
+          path: target/i686-pc-windows-gnu/release/mech3msg.dll
 
       - name: Setup 32-bit Python
         uses: actions/setup-python@v2
@@ -66,4 +58,4 @@ jobs:
           architecture: 'x86'
 
       - name: Run Python functional tests
-        run: python tests.py "./target/i686-pc-windows-msvc/release/mech3msg.dll"
+        run: python tests.py "./target/i686-pc-windows-gnu/release/mech3msg.dll"

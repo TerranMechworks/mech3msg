@@ -1,0 +1,9 @@
+[target.i686-pc-windows-msvc]
+# rustflags = ["-Z", "print-link-args", "-C", "link-arg=/NOENTRY"]
+rustflags = ["-C", "link-arg=/NOENTRY"]
+
+[build]
+target = "i686-pc-windows-gnu"
+
+[registries.crates-io]
+protocol = "sparse"

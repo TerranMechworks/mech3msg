@@ -6,57 +6,46 @@ Obviously, this is an unofficial fan effort and not connected to the developers 
 
 ## Requirements
 
-[Rust](https://www.rust-lang.org/) is required, this project uses the `nightly` toolchain. Since the original game is x86/32-bit only, the only two supported targets are `i686-pc-windows-gnu` aka. GNU, i.e. [Mingw-w64](http://mingw-w64.org), and `i686-pc-windows-msvc` aka. MSVC.
+[Rust](https://www.rust-lang.org/) is required. Since the original game is x86/32-bit only, the only two possible targets:
 
-You will also need `windmc` (Windows)/`i686-w64-mingw32-windmc` (macOS/Linux), provided by `binutils` via Mingw-w64, even if you target MSVC.
+1. `i686-pc-windows-gnu` aka. GNU, i.e. [Mingw-w64](http://mingw-w64.org). This is the default target.
+1. `i686-pc-windows-msvc` aka. MSVC. Support for this is experimental. Change the target in `.cargo/config.toml`.
 
-Command-line proficiency is assumed; all commands provided are for Bash-compatible shells, and not Powershell! (Even Windows-only commands.)
+A Windows resource message compiler is also required. The only supported message compiler is `windmc` (Windows)/`i686-w64-mingw32-windmc` (macOS/Linux), provided by `binutils` via [Mingw-w64](http://mingw-w64.org). This is required even if MSVC is targetted, due to the build script (`build.rs`). To install Mingw-w64:
 
-Cross-compilation from Linux/macOS is supported, although the tests won't be run-able (it produces a `.exe` - if it builds at all due to exception handling). You can install the target with:
+* **macOS**: `brew install mingw-w64`
+* **Ubuntu**: `apt install mingw-w64`
+* **Windows**: See [Mingw-w64](http://mingw-w64.org)
 
-```bash
-rustup +nightly target add i686-pc-windows-gnu
-```
+Cross-compilation from Linux/macOS is supported, see [building](#building).
 
-You will also need a file named `Mech3Msg.json`, which is a dump of all message keys, IDs, and values. I cannot provide a file with the game's values, but you can generate one from the original DLL using [mech3ax](https://github.com/TerranMechworks/mech3ax):
-
-```bash
-unzbd messages "Mech3Msg.dll" "Mech3Msg.json" --dump-ids
-```
-
-Alternatively, there's a dummy version in `.github/Mech3Msg.json` used for testing.
+Additionally, a file named `Mech3Msg.json` is required. This is a dump of all message keys, IDs, and values. I cannot provide a file with the game's values due to copyright concerns, but it can be generated from the original DLL using [mech3ax](https://github.com/TerranMechworks/mech3ax). Alternatively, there's a dummy version in `.github/Mech3Msg.json` used for testing.
 
 ## Building
 
-It's recommended you use the `release` version, as this results in a significantly smaller DLL using GNU, and a reasonably-sized DLL using MSVC:
+It's recommended to always build with `--release`. This results in a significantly smaller DLL. Additionally, building the default dev version may fail when cross compiling due to:
 
-```bash
-cargo build --release
+```plain
+undefined reference to `rust_eh_personality'
 ```
 
-Except for `kernel32.dll` and `msvcrt.dll` (in some cases), everything is statically linked. Therefore, the release version is built using aggressive Link Time Optimization (LTO) to remove any unnecessary linked code. Additionally, all symbols are stripped for GNU, and debug information is omitted for MSVC.
+Except for common Windows libraries (e.g. `kernel32.dll`, `msvcrt.dll`, or `vsruntime*.dll` depending on the compiler), everything is statically linked. Therefore, the release version is built using aggressive Link Time Optimization (LTO) to remove any unnecessary linked code. Additionally, all symbols are stripped for GNU, and debug information is omitted for MSVC.
 
 ## Testing
 
-To run the tests, you'll need a 32-bit Python 3.7+ installation on Windows. 64-bit Python will not be able to load the 32-bit DLL! The tests functionally test the DLL and message table, so can only be run on Windows.
+To run the tests, a Windows 32-bit Python 3.7+ installation is strictly necessary. 64-bit Python will not be able to load the 32-bit DLL! The tests functionally test the DLL and message table, so can only be run on Windows.
 
 The tests can also be used to check that the produced DLL functions identically to the original. Alternatively, a program like [Resource Hacker](http://www.angusj.com/resourcehacker/) can be used to dump the message tables in both the original DLL and produced DLL, and compare those. This bypasses the message extraction via mech3ax, and so could be useful to diagnose issues with that. Minor differences in ordering should be allowed using this method.
 
 ## Recoil support
 
-Recoil support in both mech3msg and mech3ax is experimental. The input file must still be called `Mech3Msg.json`, and the output file must be renamed to `Messages.dll`:
-
-```bash
-unzbd messages "Messages.dll" "Mech3Msg.json" --dump-ids --skip-data 48
-cargo build --release
-cp "target/i686-pc-windows-gnu/release/mech3msg.dll" "Messages.dll"
-```
+Recoil is supported, however the input file must still be called `Mech3Msg.json`, and the output file must be renamed from `mech3msg.dll` to `messages.dll`.
 
 ## Internals
 
 ### Adding messages
 
-Messages may be added as long as the keys and IDs do not collide with existing keys or IDs. Although this is not validated, it is extremely important. Only ASCII is supported, technically codepage 1252.
+Messages may be added as long as the keys and IDs do not collide with existing keys or IDs. Although this is not validated, it is extremely important. Only ASCII is supported (technically ANSI codepage 1252).
 
 ### On message table IDs
 
@@ -70,4 +59,4 @@ Messages from different versions can be merged into one JSON file to support dif
 
 ## License
 
-MechWarrior 3 Messages is GPLv3 licensed. Please see `LICENSE.txt`.
+Licensed under the European Union Public Licence (EUPL) 1.2 ([LICENSE](LICENSE) or https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12).

@@ -1,7 +1,6 @@
 use encoding::all::WINDOWS_1252;
 use encoding::{EncoderTrap, Encoding};
 use serde::Deserialize;
-use std::env;
 use std::fs::{read_to_string, File};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -29,7 +28,7 @@ fn main() {
     // Only re-run the build script if the messages change
     println!("cargo:rerun-if-changed=Mech3Msg.json");
 
-    let out_dir = env::var("OUT_DIR").expect("No OUT_DIR env var");
+    let out_dir = std::env::var("OUT_DIR").expect("No OUT_DIR env var");
     let out_path = PathBuf::from(&out_dir);
 
     let json = read_to_string("Mech3Msg.json").expect("Failed to read JSON");
@@ -97,7 +96,7 @@ fn main() {
 
     // Compile the resource into a linkable library
     let rc_path = out_path.join("messages.rc");
-    embed_resource::compile(rc_path);
+    embed_resource::compile(rc_path, embed_resource::NONE);
 
     // Must be sorted by key, for the binary search in the DLL to work!
     entries.sort_by(|a, b| a.0.cmp(&b.0));

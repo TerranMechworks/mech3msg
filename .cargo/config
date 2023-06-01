@@ -1,2 +1,0 @@
-[target.i686-pc-windows-msvc]
-rustflags = ["-Z", "print-link-args", "-C", "link-arg=/NOENTRY"]
