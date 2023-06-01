@@ -1,4 +1,5 @@
 name: Check
+
 on:
   push:
     branches:
@@ -8,54 +9,78 @@ on:
     branches:
     - main
 
-jobs:
-  check:
-    name: Check
-    runs-on: windows-2022
-    timeout-minutes: 5
-    env:
-      # Emit backtraces on panics.
-      RUST_BACKTRACE: full
-    steps:
-      - name: Print windmc path
-        shell: pwsh
-        run: which.exe windmc.exe
+env:
+  # Emit backtraces on panics.
+  RUST_BACKTRACE: full
 
-      # The next step needs `rust-toolchain.toml`
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Install Mingw-w64
+        shell: bash
+        run: sudo DEBIAN_FRONTEND=noninteractive apt-get install -y mingw-w64
+
+      - name: Print windmc path
+        shell: bash
+        run: which i686-w64-mingw32-windmc
+
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Sync toolchain
         shell: bash
         run: rustup show
 
-      - name: Copy dummy messages for test
-        shell: pwsh
-        run: Copy-Item ".\.github\Mech3Msg.json" -Destination "."
-
-      - name: Run cargo check
-        shell: bash
-        run: cargo check --release
-
       - name: Run cargo fmt
         shell: bash
         run: cargo fmt -- --check
+
+      - name: Copy dummy messages
+        shell: bash
+        run: cp "./.github/Mech3Msg.json" .
 
       - name: Run cargo build
         shell: bash
         run: cargo build --release --verbose
 
-      - name: Persist produced DLL for manual checking
-        uses: actions/upload-artifact@v2
+      - name: Upload release build
+        uses: actions/upload-artifact@v3
         with:
           name: release-build
           path: target/i686-pc-windows-gnu/release/mech3msg.dll
+          retention-days: 2
+
+  test:
+    name: Test
+    needs: build
+    runs-on: windows-2022
+    timeout-minutes: 5
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Copy dummy messages
+        shell: bash
+        run: cp "./.github/Mech3Msg.json" .
+
+      - name: Download release build
+        uses: actions/download-artifact@v3
+        with:
+          name: release-build
+
+      - name: List files
+        shell: bash
+        run: ls -R
 
       - name: Setup 32-bit Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.x'
           architecture: 'x86'
 
       - name: Run Python functional tests
-        run: python tests.py "./target/i686-pc-windows-gnu/release/mech3msg.dll"
+        shell: bash
+        run: python tests.py "./mech3msg.dll"
